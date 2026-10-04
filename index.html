@@ -101,26 +101,24 @@
             const filteredData = data.filter(item => selectedCriteria.includes(item['Selection Criteria']));
 
             // Group by software to aggregate selection criteria tags
-            const groupedData = {};
+            const groupedData = new Map();
             filteredData.forEach(item => {
-                if (!groupedData[item.Software]) {
-                    groupedData[item.Software] = {
+                if (!groupedData.has(item.Software)) {
+                    groupedData.set(item.Software, {
                         ...item,
                         criteria: new Set()
-                    };
+                    });
                 }
-                groupedData[item.Software].criteria.add(item['Selection Criteria']);
+                groupedData.get(item.Software).criteria.add(item['Selection Criteria']);
             });
 
-            // Sort by priority (missing/non-numeric last), then by price, then by name
+            // Sort by priority (missing/non-numeric last); ties keep spreadsheet order (Array.sort is stable)
             const num = (v, fallback) => {
                 const n = parseFloat(v);
                 return Number.isNaN(n) ? fallback : n;
             };
-            const sortedData = Object.values(groupedData).sort((a, b) =>
-                num(a.Priority, Infinity) - num(b.Priority, Infinity) ||
-                num(a.Price, Infinity) - num(b.Price, Infinity) ||
-                String(a.Software).localeCompare(String(b.Software))
+            const sortedData = Array.from(groupedData.values()).sort((a, b) =>
+                num(a.Priority, Infinity) - num(b.Priority, Infinity)
             );
 
             // Display each filtered software option with aggregated selection criteria
